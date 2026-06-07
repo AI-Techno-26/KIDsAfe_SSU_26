@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>KIDsAfe — 어린이보호구역 위험도 예측</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+KR:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --green-dark:  #1b5e20;
+    --green-mid:   #2e7d32;
+    --green-light: #43a047;
+    --green-pale:  #e8f5e9;
+    --red:         #c62828;
+    --red-pale:    #ffebee;
+    --text:        #1a1a1a;
+    --gray:        #666;
+    --border:      #ddd;
+    --bg:          #f9fafb;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── 헤더 ── */
+  header {
+    background: var(--green-dark);
+    color: #fff;
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .logo-pin {
+    width: 44px; height: 44px;
+    background: var(--green-light);
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .logo-pin::after {
+    content: '📍';
+    transform: rotate(45deg);
+    font-size: 18px;
+  }
+  .logo-text { line-height: 1.2; }
+  .logo-text .brand {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 3px;
+  }
+  .logo-text .brand span { color: #a5d6a7; }
+  .logo-text .sub { font-size: 11px; opacity: 0.75; letter-spacing: 1px; }
+
+  /* ── 메인 레이아웃 ── */
+  .container {
+    max-width: 860px;
+    margin: 40px auto;
+    padding: 0 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* ── 카드 ── */
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 28px 32px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  }
+  .card h2 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--green-dark);
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ── 입력 폼 ── */
+  .input-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+  @media (max-width: 500px) { .input-row { grid-template-columns: 1fr; } }
+
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gray);
+    margin-bottom: 6px;
+    letter-spacing: 0.5px;
+  }
+  input[type="number"] {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 15px;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: border-color 0.2s;
+    outline: none;
+  }
+  input[type="number"]:focus { border-color: var(--green-light); }
+
+  /* 샘플 버튼 */
+  .sample-btns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .sample-btns span {
+    font-size: 11px;
+    color: var(--gray);
+    align-self: center;
+    margin-right: 4px;
+  }
+  .sample-btn {
+    padding: 5px 12px;
+    border: 1.5px solid var(--green-light);
+    border-radius: 20px;
+    background: #fff;
+    color: var(--green-mid);
+    font-size: 12px;
+    font-family: 'Noto Sans KR', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .sample-btn:hover {
+    background: var(--green-pale);
+  }
+
+  /* 예측 버튼 */
+  #predictBtn {
+    width: 100%;
+    padding: 14px;
+    background: var(--green-mid);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: 'Noto Sans KR', sans-serif;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    letter-spacing: 1px;
+  }
+  #predictBtn:hover  { background: var(--green-dark); }
+  #predictBtn:active { transform: scale(0.98); }
+  #predictBtn:disabled {
+    background: #aaa;
+    cursor: not-allowed;
+  }
+
+  /* ── 결과 ── */
+  #result { display: none; }
+
+  .risk-banner {
+    border-radius: 12px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .risk-banner.safe   { background: var(--green-pale); border-left: 5px solid var(--green-mid); }
+  .risk-banner.danger { background: var(--red-pale);   border-left: 5px solid var(--red); }
+
+  .risk-icon { font-size: 36px; line-height: 1; }
+  .risk-info .grade {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 2px;
+    line-height: 1;
+  }
+  .risk-banner.safe   .grade { color: var(--green-dark); }
+  .risk-banner.danger .grade { color: var(--red); }
+  .risk-info .coord { font-size: 12px; color: var(--gray); margin-top: 3px; }
+
+  /* 확률 바 */
+  .prob-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .prob-label { font-size: 13px; width: 48px; flex-shrink: 0; }
+  .prob-track {
+    flex: 1;
+    height: 10px;
+    background: #eee;
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .prob-fill {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 0.6s ease;
+  }
+  .prob-fill.safe   { background: var(--green-light); }
+  .prob-fill.danger { background: var(--red); }
+  .prob-pct { font-size: 13px; font-weight: 600; width: 44px; text-align: right; }
+
+  /* 피처 테이블 */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px;
+  }
+  .feature-item {
+    background: var(--bg);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .feature-item .f-label {
+    font-size: 11px;
+    color: var(--gray);
+    margin-bottom: 4px;
+  }
+  .feature-item .f-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--green-dark);
+  }
+  .feature-item .f-unit {
+    font-size: 11px;
+    color: var(--gray);
+    margin-left: 2px;
+  }
+
+  /* 경고 배너 */
+  .error-msg {
+    background: #fff3e0;
+    border-left: 4px solid #ff9800;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #e65100;
+    display: none;
+    margin-top: 12px;
+  }
+
+  /* 로딩 */
+  .spinner {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 2px solid #fff;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  footer {
+    text-align: center;
+    font-size: 12px;
+    color: #aaa;
+    padding: 24px 0 40px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-pin"></div>
+  <div class="logo-text">
+    <div class="brand">KID<span>s</span>Afe</div>
+    <div class="sub">어린이보호구역 위험도 예측 AI</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- 입력 카드 -->
+  <div class="card">
+    <h2>📍 위치 입력</h2>
+
+    <!-- 샘플 좌표 -->
+    <div class="sample-btns">
+      <span>샘플</span>
+      <button class="sample-btn" onclick="setSample(37.5665, 126.9780)">서울시청</button>
+      <button class="sample-btn" onclick="setSample(37.5172, 127.0473)">강남 삼성동</button>
+      <button class="sample-btn" onclick="setSample(37.6176, 126.9227)">은평 응암동</button>
+      <button class="sample-btn" onclick="setSample(37.6388, 127.0278)">노원 중계동</button>
+      <button class="sample-btn" onclick="setSample(37.4836, 126.9299)">동작 노량진</button>
+    </div>
+
+    <div class="input-row">
+      <div>
+        <label>위도 (Latitude)</label>
+        <input type="number" id="lat" step="0.0001" placeholder="예: 37.5665" value="37.5665"/>
+      </div>
+      <div>
+        <label>경도 (Longitude)</label>
+        <input type="number" id="lng" step="0.0001" placeholder="예: 126.9780" value="126.9780"/>
+      </div>
+    </div>
+
+    <button id="predictBtn" onclick="predict()">위험도 예측하기</button>
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+
+  <!-- 결과 카드 -->
+  <div class="card" id="result">
+    <h2>🔍 예측 결과</h2>
+
+    <!-- 위험도 배너 -->
+    <div class="risk-banner" id="riskBanner">
+      <div class="risk-icon" id="riskIcon"></div>
+      <div class="risk-info">
+        <div class="grade" id="riskGrade"></div>
+        <div class="coord" id="riskCoord"></div>
+      </div>
+    </div>
+
+    <!-- 확률 바 -->
+    <div style="margin-bottom:24px">
+      <div class="prob-row">
+        <span class="prob-label">🟢 안전</span>
+        <div class="prob-track"><div class="prob-fill safe" id="safeBar" style="width:0%"></div></div>
+        <span class="prob-pct" id="safePct">-</span>
+      </div>
+      <div class="prob-row">
+        <span class="prob-label">🔴 위험</span>
+        <div class="prob-track"><div class="prob-fill danger" id="dangerBar" style="width:0%"></div></div>
+        <span class="prob-pct" id="dangerPct">-</span>
+      </div>
+    </div>
+
+    <!-- 피처 상세 -->
+    <h2>📊 반경 500m 내 시설물 현황</h2>
+    <div class="feature-grid" id="featureGrid"></div>
+  </div>
+
+</div>
+
+<footer>KIDsAfe · 어린이보호구역 위험도 예측 AI · 서울시 데이터 기반</footer>
+
+<script>
+// ── API 서버 주소 (Render 배포 후 실제 URL로 교체) ──────────────────────────
+const API_URL = 'https://kidsafe-api.onrender.com';
+// 로컬 테스트 시: const API_URL = 'http://localhost:8000';
+
+const FEATURE_LABELS = {
+  '도로폭'         : { label: '도로폭',       unit: 'm'  },
+  'CCTV대수'       : { label: 'CCTV',         unit: '대' },
+  '잔여시간표시기수': { label: '잔여시간표시기', unit: '개' },
+  '음향신호기수'   : { label: '음향신호기',    unit: '개' },
+  '안전표지수'     : { label: '안전표지',      unit: '개' },
+  '신호등수'       : { label: '신호등',        unit: '개' },
+  '교차로수'       : { label: '교차로',        unit: '개' },
+  '불법주차_구간'  : { label: '불법주차 구간', unit: '단계' },
+  '불법주차_원본건수':{ label: '불법주차 건수', unit: '건' },
+};
+
+function setSample(lat, lng) {
+  document.getElementById('lat').value = lat;
+  document.getElementById('lng').value = lng;
+}
+
+async function predict() {
+  const lat = parseFloat(document.getElementById('lat').value);
+  const lng = parseFloat(document.getElementById('lng').value);
+  const btn = document.getElementById('predictBtn');
+  const errEl = document.getElementById('errorMsg');
+
+  errEl.style.display = 'none';
+
+  if (isNaN(lat) || isNaN(lng)) {
+    errEl.textContent = '위도와 경도를 올바르게 입력해주세요.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  // 로딩
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>분석 중...';
+  document.getElementById('result').style.display = 'none';
+
+  try {
+    const res = await fetch(`${API_URL}/predict`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lat, lng }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || '서버 오류가 발생했습니다.');
+    }
+
+    const data = await res.json();
+    renderResult(data);
+
+  } catch (e) {
+    errEl.textContent = `오류: ${e.message}`;
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '위험도 예측하기';
+  }
+}
+
+function renderResult(data) {
+  const isDanger = data.위험도등급 === 1;
+  const banner   = document.getElementById('riskBanner');
+  const safePct  = Math.round(data.안전확률 * 100);
+  const dangerPct= Math.round(data.위험확률 * 100);
+
+  // 배너
+  banner.className = `risk-banner ${isDanger ? 'danger' : 'safe'}`;
+  document.getElementById('riskIcon').textContent  = isDanger ? '🔴' : '🟢';
+  document.getElementById('riskGrade').textContent = isDanger ? '위험 구역' : '안전 구역';
+  document.getElementById('riskCoord').textContent =
+    `위도 ${data.lat.toFixed(4)}, 경도 ${data.lng.toFixed(4)}`;
+
+  // 확률 바 (애니메이션)
+  setTimeout(() => {
+    document.getElementById('safeBar').style.width   = `${safePct}%`;
+    document.getElementById('dangerBar').style.width = `${dangerPct}%`;
+  }, 50);
+  document.getElementById('safePct').textContent   = `${safePct}%`;
+  document.getElementById('dangerPct').textContent = `${dangerPct}%`;
+
+  // 피처 그리드
+  const grid = document.getElementById('featureGrid');
+  grid.innerHTML = '';
+  const f = data.features;
+  const entries = [
+    ['잔여시간표시기수', f['잔여시간표시기수']],
+    ['음향신호기수',     f['음향신호기수']],
+    ['안전표지수',       f['안전표지수']],
+    ['신호등수',         f['신호등수']],
+    ['교차로수',         f['교차로수']],
+    ['불법주차_원본건수',f['불법주차_원본건수']],
+    ['CCTV대수',         f['CCTV대수']],
+    ['도로폭',           f['도로폭']],
+  ];
+  entries.forEach(([key, val]) => {
+    const info = FEATURE_LABELS[key] || { label: key, unit: '' };
+    grid.innerHTML += `
+      <div class="feature-item">
+        <div class="f-label">${info.label}</div>
+        <div class="f-value">${typeof val === 'number' ? val.toLocaleString() : val}
+          <span class="f-unit">${info.unit}</span>
+        </div>
+      </div>`;
+  });
+
+  document.getElementById('result').style.display = 'block';
+  document.getElementById('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Enter 키로 예측
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') predict();
+});
+</script>
+</body>
+</html>
