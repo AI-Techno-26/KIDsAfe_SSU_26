@@ -88,8 +88,15 @@ print("  ✅ XGBoost 모델 로드 완료")
 print("▶ BallTree 빌드 중...")
 
 def load_csv(path):
-    try:    return pd.read_csv(path, encoding='utf-8')
-    except: return pd.read_csv(path, encoding='cp949')
+    opts = dict(
+        on_bad_lines='skip',      # 파싱 오류 행 건너뜀
+        quoting=0,                # 따옴표 처리 허용
+        engine='python',          # C 파서 대신 Python 파서 사용
+    )
+    try:
+        return pd.read_csv(path, encoding='utf-8', **opts)
+    except:
+        return pd.read_csv(path, encoding='cp949', **opts)
 
 def build_tree(path):
     df = load_csv(path)
