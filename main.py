@@ -7,6 +7,8 @@ CSV 로드 없이 pkl 파일만 사용 → 메모리 절약
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 import pickle, os
 import numpy as np
@@ -99,6 +101,10 @@ def root():
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+@app.get("/app")
+def frontend():
+    return FileResponse(os.path.join(BASE_DIR, 'index.html'))
 
 @app.post("/predict", response_model=PredictResponse)
 def predict(req: PredictRequest):
