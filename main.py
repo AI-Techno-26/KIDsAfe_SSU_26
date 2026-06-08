@@ -52,16 +52,49 @@ BASE_DATA_PATH = os.path.join(DATA_DIR, '보호구역_500M.csv')
 
 # ── Google Drive 다운로드 ─────────────────────────────────────────────────────
 def download_from_drive(file_id: str, dest_path: str):
-    url     = f"https://drive.google.com/uc?export=download&id={file_id}"
+    """Google Drive 대용량 파일 확인 토큰 처리 포함 다운로드"""
     session = requests.Session()
-    res     = session.get(url, stream=True)
-    token   = next((v for k, v in res.cookies.items()
-                    if k.startswith('download_warning')), None)
+
+    # 1차 요청
+    url = f"https://drive.google.com/uc?export=download&id={file_id}"
+    res = session.get(url, stream=True)
+
+    # 확인 토큰 추출 (대용량 파일 경고 페이지 대응)
+    token = None
+    for key, value in res.cookies.items():
+        if key.startswith('download_warning'):
+            token = value
+            break
+
+    # 토큰이 없으면 HTML에서 직접 추출 시도
+    if token is None:
+        content = res.content.decode('utf-8', errors='ignore')
+        import re
+        match = re.search(r'confirm=([0-9A-Za-z_\-]+)', content)
+        if match:
+            token = match.group(1)
+
+    # 2차 요청 (확인 토큰 포함)
     if token:
-        res = session.get(url, params={'confirm': token}, stream=True)
+        res = session.get(url, params={'confirm': token,
+                                       'uuid': file_id}, stream=True)
+
+    # 저장
+    os.makedirs(os.path.dirname(dest_path), exist_ok=True)
     with open(dest_path, 'wb') as f:
         for chunk in res.iter_content(chunk_size=32768):
-            if chunk: f.write(chunk)
+            if chunk:
+                f.write(chunk)
+
+    # 검증: 저장된 파일이 HTML이면 삭제 후 예외 발생
+    with open(dest_path, 'rb') as f:
+        header = f.read(512).decode('utf-8', errors='ignore')
+    if '<!DOCTYPE' in header or '<html' in header:
+        os.remove(dest_path)
+        raise ValueError(f"Drive 다운로드 실패 (HTML 반환): {file_id}")
+
+    size_mb = os.path.getsize(dest_path) / 1024 / 1024
+    print(f"  ✅ 다운로드 완료: {os.path.basename(dest_path)} ({size_mb:.1f} MB)")
 
 def ensure_data_files():
     for filename, file_id in DRIVE_FILES.items():
