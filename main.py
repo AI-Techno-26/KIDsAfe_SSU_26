@@ -98,8 +98,18 @@ def load_csv(path):
     except:
         return pd.read_csv(path, encoding='cp949', **opts)
 
+# def build_tree(path):
+#     df = load_csv(path)
+#     for lc, nc in [('Y','X'),('위도','경도'),('y좌표','x좌표'),('lat','lng')]:
+#         if lc in df.columns and nc in df.columns:
+#             fac  = df[[lc, nc]].apply(pd.to_numeric, errors='coerce').dropna()
+#             tree = BallTree(np.radians(fac[[lc, nc]].values), metric='haversine')
+#             return tree, len(fac)
+#     raise ValueError(f"좌표 컬럼 없음: {path}")
 def build_tree(path):
     df = load_csv(path)
+    print(f"  [디버그] {os.path.basename(path)} 컬럼: {list(df.columns)}")
+    print(f"  [디버그] 상위 2행:\n{df.head(2).to_string()}")
     for lc, nc in [('Y','X'),('위도','경도'),('y좌표','x좌표'),('lat','lng')]:
         if lc in df.columns and nc in df.columns:
             fac  = df[[lc, nc]].apply(pd.to_numeric, errors='coerce').dropna()
