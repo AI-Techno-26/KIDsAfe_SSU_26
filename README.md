@@ -9,22 +9,26 @@
 ## 파일 구조
 
 ```
-kidsafe_server/
-├── main.py              ← FastAPI 서버
-├── requirements.txt     ← 패키지 목록
-├── render.yaml          ← Render 배포 설정
-├── index.html           ← 프론트엔드
-├── models/
-│   ├── xgb_model.pkl    ← 학습된 XGBoost 모델 (Colab에서 복사)
-│   └── scaler.pkl       ← MinMaxScaler (Colab에서 복사)
-└── data/
-    ├── 서울시 잔여시간표시기 관련 정보-위경도(추가).csv
-    ├── 서울시 교차로 관련 정보-위경도(추가).csv
-    ├── 서울시 음향신호기 관련 정보-위경도(추가).csv
-    ├── 서울시 안전표지 관련 정보-위경도(추가).csv
-    ├── 서울시 신호등 관련 정보-위경도(추가).csv
-    ├── 서울시_불법주정차단속_위치정보_병합.csv
-    └── 서울어린이보호구역(2019-2024)기준_교통사고다발지역_500M.csv
+KIDsAfe_SSU_26-main/
+├── main.py                
+├── index.html             
+├── requirements.txt
+├── render.yaml
+├── gitignore              
+├── LICENSE
+├── README.md
+├── data/
+│   └── 서울어린이보호구역_500M.csv  
+└── models/
+    ├── xgb_model.pkl      
+    ├── scaler.pkl         
+    ├── base_stats.pkl     
+    ├── tree_교차로수.pkl   
+    ├── tree_불법주차수.pkl  
+    ├── tree_신호등수.pkl   
+    ├── tree_안전표지수.pkl  
+    ├── tree_음향신호기수.pkl 
+    └── tree_잔여시간표시기수.pkl 
 ```
 
 ---
