@@ -30,9 +30,9 @@ KIDsAfe_SSU_26/
 ├── render.yaml          ← Render.com 배포 설정
 ├── .gitignore
 └── models/
-    ├── xgb_model.pkl         ← 학습된 XGBoost 모델
-    ├── scaler.pkl             ← MinMaxScaler
-    ├── base_stats.pkl         ← 도로폭/CCTV 평균, 불법주차 분위수
+    ├── xgb_model.pkl            ← 학습된 XGBoost 모델
+    ├── scaler.pkl               ← MinMaxScaler
+    ├── base_stats.pkl           ← 도로폭/CCTV 평균, 불법주차 분위수
     ├── tree_잔여시간표시기수.pkl  ← BallTree (반경 카운팅용)
     ├── tree_교차로수.pkl
     ├── tree_음향신호기수.pkl
