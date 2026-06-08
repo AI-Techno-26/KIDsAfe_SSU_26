@@ -108,6 +108,16 @@ def download_from_drive(file_id: str, dest_path: str):
 #     size_mb = os.path.getsize(dest_path) / 1024 / 1024
 #     print(f"  ✅ 다운로드 완료: {os.path.basename(dest_path)} ({size_mb:.1f} MB)")
 
+#HuggingFace dataset 적용버전
+def download_file(url: str, dest_path: str):
+    os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+    res = requests.get(url, stream=True)
+    with open(dest_path, 'wb') as f:
+        for chunk in res.iter_content(chunk_size=32768):
+            if chunk: f.write(chunk)
+    print(f"  ✅ {os.path.basename(dest_path)} "
+          f"({os.path.getsize(dest_path)/1024/1024:.1f} MB)")
+
 def ensure_data_files():
     for filename, file_id in DRIVE_FILES.items():
         dest = os.path.join(DATA_DIR, filename)
