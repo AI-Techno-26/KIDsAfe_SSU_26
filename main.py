@@ -107,15 +107,27 @@ def load_csv(path):
 #             return tree, len(fac)
 #     raise ValueError(f"좌표 컬럼 없음: {path}")
 def build_tree(path):
-    df = load_csv(path)
-    print(f"  [디버그] {os.path.basename(path)} 컬럼: {list(df.columns)}")
-    print(f"  [디버그] 상위 2행:\n{df.head(2).to_string()}")
-    for lc, nc in [('Y','X'),('위도','경도'),('y좌표','x좌표'),('lat','lng')]:
+    try:
+        df = pd.read_csv(path, encoding='utf-8', on_bad_lines='skip', engine='python')
+    except:
+        try:
+            df = pd.read_csv(path, encoding='cp949', on_bad_lines='skip', engine='python')
+        except Exception as e:
+            raise ValueError(f"CSV 로드 실패: {path} / {e}")
+
+    print(f"  [디버그] {os.path.basename(path)}")
+    print(f"  [디버그] 컬럼: {list(df.columns)}")
+    print(f"  [디버그] shape: {df.shape}")
+    print(f"  [디버그] 첫행: {df.iloc[0].to_dict() if len(df) > 0 else 'EMPTY'}")
+
+    for lc, nc in [('Y','X'),('위도','경도'),('y좌표','x좌표'),
+                   ('Y좌표','X좌표'),('lat','lng'),('latitude','longitude')]:
         if lc in df.columns and nc in df.columns:
             fac  = df[[lc, nc]].apply(pd.to_numeric, errors='coerce').dropna()
             tree = BallTree(np.radians(fac[[lc, nc]].values), metric='haversine')
             return tree, len(fac)
-    raise ValueError(f"좌표 컬럼 없음: {path}")
+
+    raise ValueError(f"좌표 컬럼 없음: {path} / 전체 컬럼: {list(df.columns)}")
 
 FACILITY_TREES = {}
 for nm, path in FACILITY_PATHS.items():
