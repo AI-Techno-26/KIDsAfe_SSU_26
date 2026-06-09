@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>KIDsAfe — 어린이보호구역 위험도 예측</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+KR:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <style>
   :root {
     --green-dark:  #1b5e20;
@@ -18,260 +19,184 @@
     --border:      #ddd;
     --bg:          #f9fafb;
   }
-
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
-  body {
-    font-family: 'Noto Sans KR', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-  }
-
-  /* ── 헤더 ── */
   header {
-    background: var(--green-dark);
-    color: #fff;
-    padding: 20px 32px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
+    background: var(--green-dark); color: #fff;
+    padding: 16px 32px; display: flex; align-items: center; gap: 16px;
+    position: sticky; top: 0; z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
   }
   .logo-pin {
-    width: 44px; height: 44px;
-    background: var(--green-light);
-    border-radius: 50% 50% 50% 0;
-    transform: rotate(-45deg);
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
+    width: 40px; height: 40px; background: var(--green-light);
+    border-radius: 50% 50% 50% 0; transform: rotate(-45deg);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   }
-  .logo-pin::after {
-    content: '📍';
-    transform: rotate(45deg);
-    font-size: 18px;
-  }
-  .logo-text { line-height: 1.2; }
-  .logo-text .brand {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 28px;
-    letter-spacing: 3px;
-  }
+  .logo-pin::after { content: '📍'; transform: rotate(45deg); font-size: 16px; }
+  .logo-text .brand { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 3px; }
   .logo-text .brand span { color: #a5d6a7; }
   .logo-text .sub { font-size: 11px; opacity: 0.75; letter-spacing: 1px; }
 
-  /* ── 메인 레이아웃 ── */
-  .container {
-    max-width: 860px;
-    margin: 40px auto;
-    padding: 0 20px;
+  /* ── 2단 레이아웃 ── */
+  .layout {
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    height: calc(100vh - 72px);
+  }
+  @media (max-width: 800px) {
+    .layout { grid-template-columns: 1fr; height: auto; }
+    #map-wrapper { height: 0; overflow: hidden; transition: height 0.35s ease; }
+    #map-wrapper.open { height: 320px; }
+    #map { height: 320px; }
+  }
+  @media (min-width: 801px) {
+    #map-toggle-btn { display: none !important; }
+    #map-wrapper { height: 100% !important; overflow: visible !important; }
+  }
+
+  /* 지도 안내 배너 — 토글 버튼 포함 */
+  .map-tip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .map-tip-text { flex: 1; line-height: 1.5; font-size: 12px; }
+  #map-toggle-btn {
+    flex-shrink: 0;
+    display: flex; align-items: center; gap: 5px;
+    padding: 6px 12px;
+    background: var(--green-mid); color: #fff;
+    border: none; border-radius: 20px;
+    font-size: 12px; font-weight: 600;
+    font-family: 'Noto Sans KR', sans-serif;
+    cursor: pointer; transition: background 0.15s; white-space: nowrap;
+  }
+  #map-toggle-btn:hover { background: var(--green-dark); }
+  #map-toggle-btn .toggle-icon { font-size: 13px; transition: transform 0.3s; display: inline-block; }
+  #map-toggle-btn.open .toggle-icon { transform: rotate(180deg); }
+
+  /* ── 왼쪽 패널 ── */
+  .panel {
+    overflow-y: auto;
+    padding: 20px;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 16px;
+    background: var(--bg);
+    border-right: 1px solid var(--border);
+  }
+
+  /* ── 지도 ── */
+  #map {
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
   }
 
   /* ── 카드 ── */
   .card {
-    background: #fff;
-    border-radius: 16px;
-    padding: 28px 32px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    background: #fff; border-radius: 14px;
+    padding: 20px 22px; box-shadow: 0 2px 10px rgba(0,0,0,0.07);
   }
   .card h2 {
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--green-dark);
-    margin-bottom: 18px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    font-size: 13px; font-weight: 700; color: var(--green-dark);
+    margin-bottom: 14px; display: flex; align-items: center; gap: 6px;
   }
 
-  /* ── 입력 폼 ── */
-  .input-row {
+  /* 지도 안내 배너 */
+  .map-tip {
+    background: var(--green-pale);
+    border-left: 4px solid var(--green-mid);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--green-dark);
+    line-height: 1.5;
+  }
+
+  /* 좌표 표시 */
+  .coord-display {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 18px;
+    gap: 10px;
+    margin-bottom: 14px;
   }
-  @media (max-width: 500px) { .input-row { grid-template-columns: 1fr; } }
-
-  label {
-    display: block;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--gray);
-    margin-bottom: 6px;
-    letter-spacing: 0.5px;
-  }
-  input[type="number"] {
-    width: 100%;
-    padding: 12px 14px;
+  .coord-box {
+    background: var(--bg);
     border: 1.5px solid var(--border);
     border-radius: 10px;
-    font-size: 15px;
-    font-family: 'Noto Sans KR', sans-serif;
-    transition: border-color 0.2s;
-    outline: none;
+    padding: 10px 12px;
   }
-  input[type="number"]:focus { border-color: var(--green-light); }
+  .coord-box label { font-size: 10px; font-weight: 600; color: var(--gray); display: block; margin-bottom: 3px; }
+  .coord-box .val { font-size: 15px; font-weight: 700; color: var(--green-dark); font-family: monospace; }
 
   /* 샘플 버튼 */
-  .sample-btns {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 20px;
-  }
-  .sample-btns span {
-    font-size: 11px;
-    color: var(--gray);
-    align-self: center;
-    margin-right: 4px;
-  }
+  .sample-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .sample-btns > span { font-size: 11px; color: var(--gray); align-self: center; }
   .sample-btn {
-    padding: 5px 12px;
+    padding: 4px 10px;
     border: 1.5px solid var(--green-light);
-    border-radius: 20px;
-    background: #fff;
-    color: var(--green-mid);
-    font-size: 12px;
-    font-family: 'Noto Sans KR', sans-serif;
-    cursor: pointer;
-    transition: all 0.15s;
+    border-radius: 20px; background: #fff; color: var(--green-mid);
+    font-size: 11px; font-family: 'Noto Sans KR', sans-serif;
+    cursor: pointer; transition: all 0.15s;
   }
-  .sample-btn:hover {
-    background: var(--green-pale);
-  }
+  .sample-btn:hover { background: var(--green-pale); }
 
   /* 예측 버튼 */
   #predictBtn {
-    width: 100%;
-    padding: 14px;
-    background: var(--green-mid);
-    color: #fff;
-    border: none;
-    border-radius: 12px;
-    font-size: 15px;
-    font-weight: 700;
-    font-family: 'Noto Sans KR', sans-serif;
-    cursor: pointer;
-    transition: background 0.2s, transform 0.1s;
-    letter-spacing: 1px;
+    width: 100%; padding: 13px;
+    background: var(--green-mid); color: #fff; border: none;
+    border-radius: 12px; font-size: 15px; font-weight: 700;
+    font-family: 'Noto Sans KR', sans-serif; cursor: pointer;
+    transition: background 0.2s, transform 0.1s; letter-spacing: 1px;
   }
   #predictBtn:hover  { background: var(--green-dark); }
   #predictBtn:active { transform: scale(0.98); }
-  #predictBtn:disabled {
-    background: #aaa;
-    cursor: not-allowed;
-  }
+  #predictBtn:disabled { background: #aaa; cursor: not-allowed; }
 
-  /* ── 결과 ── */
-  #result { display: none; }
-
+  /* 결과 */
   .risk-banner {
-    border-radius: 12px;
-    padding: 20px 24px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 20px;
+    border-radius: 10px; padding: 16px 18px;
+    display: flex; align-items: center; gap: 14px; margin-bottom: 16px;
   }
   .risk-banner.safe   { background: var(--green-pale); border-left: 5px solid var(--green-mid); }
   .risk-banner.danger { background: var(--red-pale);   border-left: 5px solid var(--red); }
-
-  .risk-icon { font-size: 36px; line-height: 1; }
-  .risk-info .grade {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 28px;
-    letter-spacing: 2px;
-    line-height: 1;
-  }
+  .risk-icon { font-size: 32px; line-height: 1; }
+  .risk-info .grade { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 2px; line-height: 1; }
   .risk-banner.safe   .grade { color: var(--green-dark); }
   .risk-banner.danger .grade { color: var(--red); }
-  .risk-info .coord { font-size: 12px; color: var(--gray); margin-top: 3px; }
+  .risk-info .coord { font-size: 11px; color: var(--gray); margin-top: 3px; }
 
-  /* 확률 바 */
-  .prob-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 10px;
-  }
-  .prob-label { font-size: 13px; width: 48px; flex-shrink: 0; }
-  .prob-track {
-    flex: 1;
-    height: 10px;
-    background: #eee;
-    border-radius: 99px;
-    overflow: hidden;
-  }
-  .prob-fill {
-    height: 100%;
-    border-radius: 99px;
-    transition: width 0.6s ease;
-  }
+  .prob-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .prob-label { font-size: 12px; width: 46px; flex-shrink: 0; }
+  .prob-track { flex: 1; height: 9px; background: #eee; border-radius: 99px; overflow: hidden; }
+  .prob-fill { height: 100%; border-radius: 99px; transition: width 0.6s ease; }
   .prob-fill.safe   { background: var(--green-light); }
   .prob-fill.danger { background: var(--red); }
-  .prob-pct { font-size: 13px; font-weight: 600; width: 44px; text-align: right; }
+  .prob-pct { font-size: 12px; font-weight: 600; width: 38px; text-align: right; }
 
-  /* 피처 테이블 */
-  .feature-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 10px;
-  }
-  .feature-item {
-    background: var(--bg);
-    border-radius: 10px;
-    padding: 12px 14px;
-  }
-  .feature-item .f-label {
-    font-size: 11px;
-    color: var(--gray);
-    margin-bottom: 4px;
-  }
-  .feature-item .f-value {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--green-dark);
-  }
-  .feature-item .f-unit {
-    font-size: 11px;
-    color: var(--gray);
-    margin-left: 2px;
-  }
+  .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .feature-item { background: var(--bg); border-radius: 8px; padding: 10px 12px; }
+  .feature-item .f-label { font-size: 10px; color: var(--gray); margin-bottom: 3px; }
+  .feature-item .f-value { font-size: 16px; font-weight: 700; color: var(--green-dark); }
+  .feature-item .f-unit  { font-size: 10px; color: var(--gray); margin-left: 2px; }
 
-  /* 경고 배너 */
   .error-msg {
-    background: #fff3e0;
-    border-left: 4px solid #ff9800;
-    border-radius: 8px;
-    padding: 12px 16px;
-    font-size: 13px;
-    color: #e65100;
-    display: none;
-    margin-top: 12px;
+    background: #fff3e0; border-left: 4px solid #ff9800;
+    border-radius: 8px; padding: 10px 14px;
+    font-size: 12px; color: #e65100; display: none; margin-top: 10px;
   }
-
-  /* 로딩 */
   .spinner {
-    display: inline-block;
-    width: 16px; height: 16px;
-    border: 2px solid #fff;
-    border-top-color: transparent;
-    border-radius: 50%;
-    animation: spin 0.6s linear infinite;
-    margin-right: 8px;
-    vertical-align: middle;
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid #fff; border-top-color: transparent;
+    border-radius: 50%; animation: spin 0.6s linear infinite;
+    margin-right: 6px; vertical-align: middle;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  footer {
-    text-align: center;
-    font-size: 12px;
-    color: #aaa;
-    padding: 24px 0 40px;
-  }
+  #result { display: none; }
 </style>
 </head>
 <body>
@@ -284,110 +209,203 @@
   </div>
 </header>
 
-<div class="container">
+<div class="layout">
 
-  <!-- 입력 카드 -->
-  <div class="card">
-    <h2>📍 위치 입력</h2>
+  <!-- ── 왼쪽 패널 ── -->
+  <div class="panel">
 
-    <!-- 샘플 좌표 -->
-    <div class="sample-btns">
-      <span>샘플</span>
-      <button class="sample-btn" onclick="setSample(37.5665, 126.9780)">서울시청</button>
-      <button class="sample-btn" onclick="setSample(37.5172, 127.0473)">강남 삼성동</button>
-      <button class="sample-btn" onclick="setSample(37.6176, 126.9227)">은평 응암동</button>
-      <button class="sample-btn" onclick="setSample(37.6388, 127.0278)">노원 중계동</button>
-      <button class="sample-btn" onclick="setSample(37.4836, 126.9299)">동작 노량진</button>
+    <!-- 지도 안내 + 모바일 토글 버튼 -->
+    <div class="map-tip" style="background:var(--green-pale);border-left:4px solid var(--green-mid);border-radius:8px;padding:10px 14px;color:var(--green-dark);">
+      <span class="map-tip-text">
+        지도를 <strong>클릭</strong>하면 해당 위치의 좌표가 자동 입력됩니다.
+      </span>
+      <button id="map-toggle-btn" onclick="toggleMap()">
+        <span>지도 보기</span>
+        <span class="toggle-icon">▼</span>
+      </button>
     </div>
 
-    <div class="input-row">
-      <div>
-        <label>위도 (Latitude)</label>
-        <input type="number" id="lat" step="0.0001" placeholder="예: 37.5665" value="37.5665"/>
+    <!-- 좌표 표시 -->
+    <div class="card">
+      <h2>📍 선택된 위치</h2>
+      <div class="coord-display">
+        <div class="coord-box">
+          <label>위도 (Latitude)</label>
+          <div class="val" id="latVal">37.5665</div>
+        </div>
+        <div class="coord-box">
+          <label>경도 (Longitude)</label>
+          <div class="val" id="lngVal">126.9780</div>
+        </div>
       </div>
-      <div>
-        <label>경도 (Longitude)</label>
-        <input type="number" id="lng" step="0.0001" placeholder="예: 126.9780" value="126.9780"/>
+
+      <!-- 예시 버튼 -->
+      <div class="sample-btns">
+        <span>예시</span>
+        <button class="sample-btn" onclick="moveTo(37.5665,126.9780,'서울시청')">서울시청</button>
+        <button class="sample-btn" onclick="moveTo(37.5172,127.0473,'강남 삼성동')">강남 삼성동</button>
+        <button class="sample-btn" onclick="moveTo(37.6176,126.9227,'은평 응암동')">은평 응암동</button>
+        <button class="sample-btn" onclick="moveTo(37.6388,127.0278,'노원 중계동')">노원 중계동</button>
+        <button class="sample-btn" onclick="moveTo(37.4836,126.9299,'동작 노량진')">동작 노량진</button>
       </div>
+
+      <button id="predictBtn" onclick="predict()">위험도 예측하기</button>
+      <div class="error-msg" id="errorMsg"></div>
     </div>
 
-    <button id="predictBtn" onclick="predict()">위험도 예측하기</button>
-    <div class="error-msg" id="errorMsg"></div>
-  </div>
+    <!-- 결과 카드 -->
+    <div class="card" id="result">
+      <h2>🔍 예측 결과</h2>
 
-  <!-- 결과 카드 -->
-  <div class="card" id="result">
-    <h2>🔍 예측 결과</h2>
-
-    <!-- 위험도 배너 -->
-    <div class="risk-banner" id="riskBanner">
-      <div class="risk-icon" id="riskIcon"></div>
-      <div class="risk-info">
-        <div class="grade" id="riskGrade"></div>
-        <div class="coord" id="riskCoord"></div>
+      <div class="risk-banner" id="riskBanner">
+        <div class="risk-icon" id="riskIcon"></div>
+        <div class="risk-info">
+          <div class="grade" id="riskGrade"></div>
+          <div class="coord" id="riskCoord"></div>
+        </div>
       </div>
+
+      <div style="margin-bottom:16px">
+        <div class="prob-row">
+          <span class="prob-label">🟢 안전</span>
+          <div class="prob-track"><div class="prob-fill safe" id="safeBar" style="width:0%"></div></div>
+          <span class="prob-pct" id="safePct">-</span>
+        </div>
+        <div class="prob-row">
+          <span class="prob-label">🔴 위험</span>
+          <div class="prob-track"><div class="prob-fill danger" id="dangerBar" style="width:0%"></div></div>
+          <span class="prob-pct" id="dangerPct">-</span>
+        </div>
+      </div>
+
+      <h2>📊 반경 500m 내 시설물</h2>
+      <div class="feature-grid" id="featureGrid"></div>
     </div>
 
-    <!-- 확률 바 -->
-    <div style="margin-bottom:24px">
-      <div class="prob-row">
-        <span class="prob-label">🟢 안전</span>
-        <div class="prob-track"><div class="prob-fill safe" id="safeBar" style="width:0%"></div></div>
-        <span class="prob-pct" id="safePct">-</span>
-      </div>
-      <div class="prob-row">
-        <span class="prob-label">🔴 위험</span>
-        <div class="prob-track"><div class="prob-fill danger" id="dangerBar" style="width:0%"></div></div>
-        <span class="prob-pct" id="dangerPct">-</span>
-      </div>
-    </div>
+  </div><!-- /panel -->
 
-    <!-- 피처 상세 -->
-    <h2>📊 반경 500m 내 시설물 현황</h2>
-    <div class="feature-grid" id="featureGrid"></div>
+  <!-- ── 오른쪽 지도 ── -->
+  <div id="map-wrapper">
+    <div id="map"></div>
   </div>
 
 </div>
 
-<footer>KIDsAfe · 어린이보호구역 위험도 예측 AI · 서울시 데이터 기반</footer>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
-// ── API 서버 주소 (Render 배포 후 실제 URL로 교체) ──────────────────────────
 const API_URL = 'https://kidsafe-ssu-26.onrender.com';
-// 로컬 테스트 시: const API_URL = 'http://localhost:8000';
 
 const FEATURE_LABELS = {
-  '도로폭'         : { label: '도로폭',       unit: 'm'  },
-  'CCTV대수'       : { label: 'CCTV',         unit: '대' },
-  '잔여시간표시기수': { label: '잔여시간표시기', unit: '개' },
-  '음향신호기수'   : { label: '음향신호기',    unit: '개' },
-  '안전표지수'     : { label: '안전표지',      unit: '개' },
-  '신호등수'       : { label: '신호등',        unit: '개' },
-  '교차로수'       : { label: '교차로',        unit: '개' },
-  '불법주차_구간'  : { label: '불법주차 구간', unit: '단계' },
-  '불법주차_원본건수':{ label: '불법주차 건수', unit: '건' },
+  '잔여시간표시기수' : { label: '잔여시간표시기', unit: '개' },
+  '음향신호기수'    : { label: '음향신호기',      unit: '개' },
+  '안전표지수'      : { label: '안전표지',        unit: '개' },
+  '신호등수'        : { label: '신호등',          unit: '개' },
+  '교차로수'        : { label: '교차로',          unit: '개' },
+  '불법주차_원본건수': { label: '불법주차',        unit: '건' },
+  'CCTV대수'        : { label: 'CCTV',            unit: '대' },
+  '도로폭'          : { label: '도로폭',          unit: 'm'  },
 };
 
-function setSample(lat, lng) {
-  document.getElementById('lat').value = lat;
-  document.getElementById('lng').value = lng;
+// ── 지도 초기화 (서울 중심) ───────────────────────────────────────────────────
+const map = L.map('map', { zoomControl: true }).setView([37.5665, 126.9780], 13);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© <a href="https://www.openstreetmap.org/">OpenStreetMap</a>',
+  maxZoom: 19,
+}).addTo(map);
+
+// 서울 경계 표시 (반투명 사각형)
+const seoulBounds = [[37.2, 126.5], [37.8, 127.3]];
+L.rectangle(seoulBounds, {
+  color: '#2e7d32', weight: 2,
+  fillColor: '#43a047', fillOpacity: 0.04,
+  dashArray: '6 4',
+}).addTo(map).bindTooltip('서울시 분석 범위', { permanent: false });
+
+// 마커 (커스텀 핀)
+const pinIcon = L.divIcon({
+  html: `<div style="
+    width:32px; height:32px;
+    background:#2e7d32;
+    border-radius:50% 50% 50% 0;
+    transform:rotate(-45deg);
+    border:3px solid #fff;
+    box-shadow:0 2px 8px rgba(0,0,0,0.3);
+  "></div>`,
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
+  className: '',
+});
+
+let marker = L.marker([37.5665, 126.9780], { icon: pinIcon, draggable: true }).addTo(map);
+
+// 반경 500m 원
+let circle = L.circle([37.5665, 126.9780], {
+  radius: 500,
+  color: '#2e7d32', weight: 1.5,
+  fillColor: '#43a047', fillOpacity: 0.08,
+}).addTo(map);
+
+// 현재 선택 좌표
+let currentLat = 37.5665;
+let currentLng = 126.9780;
+
+function updatePosition(lat, lng) {
+  currentLat = parseFloat(lat.toFixed(4));
+  currentLng = parseFloat(lng.toFixed(4));
+
+  document.getElementById('latVal').textContent = currentLat;
+  document.getElementById('lngVal').textContent = currentLng;
+
+  marker.setLatLng([lat, lng]);
+  circle.setLatLng([lat, lng]);
+  document.getElementById('result').style.display = 'none';
 }
 
-async function predict() {
-  const lat = parseFloat(document.getElementById('lat').value);
-  const lng = parseFloat(document.getElementById('lng').value);
-  const btn = document.getElementById('predictBtn');
-  const errEl = document.getElementById('errorMsg');
+// 지도 클릭 → 좌표 선택
+map.on('click', e => {
+  updatePosition(e.latlng.lat, e.latlng.lng);
+});
 
+// 마커 드래그
+marker.on('dragend', e => {
+  const pos = e.target.getLatLng();
+  updatePosition(pos.lat, pos.lng);
+});
+
+// 샘플 버튼
+function moveTo(lat, lng, name) {
+  updatePosition(lat, lng);
+  map.setView([lat, lng], 15);
+  marker.bindPopup(`<b>${name}</b>`).openPopup();
+}
+
+// ── 모바일 지도 토글 ──────────────────────────────────────────────────────────
+function toggleMap() {
+  const wrapper = document.getElementById('map-wrapper');
+  const btn     = document.getElementById('map-toggle-btn');
+  const isOpen  = wrapper.classList.toggle('open');
+  btn.classList.toggle('open', isOpen);
+  btn.querySelector('span:first-child').textContent = isOpen ? '지도 닫기' : '지도 보기';
+
+  // 지도가 열릴 때 크기 재계산 (Leaflet 버그 방지)
+  if (isOpen) {
+    setTimeout(() => map.invalidateSize(), 350);
+  }
+}
+
+// ── 예측 ─────────────────────────────────────────────────────────────────────
+async function predict() {
+  const btn   = document.getElementById('predictBtn');
+  const errEl = document.getElementById('errorMsg');
   errEl.style.display = 'none';
 
-  if (isNaN(lat) || isNaN(lng)) {
-    errEl.textContent = '위도와 경도를 올바르게 입력해주세요.';
+  if (!currentLat || !currentLng) {
+    errEl.textContent = '지도에서 위치를 먼저 선택해주세요.';
     errEl.style.display = 'block';
     return;
   }
 
-  // 로딩
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>분석 중...';
   document.getElementById('result').style.display = 'none';
@@ -396,7 +414,7 @@ async function predict() {
     const res = await fetch(`${API_URL}/predict`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lat, lng }),
+      body: JSON.stringify({ lat: currentLat, lng: currentLng }),
     });
 
     if (!res.ok) {
@@ -418,18 +436,43 @@ async function predict() {
 
 function renderResult(data) {
   const isDanger = data.위험도등급 === 1;
-  const banner   = document.getElementById('riskBanner');
   const safePct  = Math.round(data.안전확률 * 100);
   const dangerPct= Math.round(data.위험확률 * 100);
 
+  // 마커 색상 변경
+  const color = isDanger ? '#c62828' : '#2e7d32';
+  marker.setIcon(L.divIcon({
+    html: `<div style="
+      width:32px; height:32px; background:${color};
+      border-radius:50% 50% 50% 0; transform:rotate(-45deg);
+      border:3px solid #fff; box-shadow:0 2px 8px rgba(0,0,0,0.3);
+    "></div>`,
+    iconSize: [32, 32], iconAnchor: [16, 32], className: '',
+  }));
+  circle.setStyle({ color, fillColor: color });
+
+  // 마커 팝업
+  marker.bindPopup(`
+    <div style="font-family:'Noto Sans KR',sans-serif; text-align:center; padding:4px 8px">
+      <div style="font-size:20px">${isDanger ? '🔴' : '🟢'}</div>
+      <div style="font-weight:700; font-size:14px; margin-top:4px">
+        ${isDanger ? '위험 구역' : '안전 구역'}
+      </div>
+      <div style="font-size:11px; color:#666; margin-top:2px">
+        위험확률 ${dangerPct}%
+      </div>
+    </div>
+  `).openPopup();
+
   // 배너
+  const banner = document.getElementById('riskBanner');
   banner.className = `risk-banner ${isDanger ? 'danger' : 'safe'}`;
   document.getElementById('riskIcon').textContent  = isDanger ? '🔴' : '🟢';
   document.getElementById('riskGrade').textContent = isDanger ? '위험 구역' : '안전 구역';
   document.getElementById('riskCoord').textContent =
     `위도 ${data.lat.toFixed(4)}, 경도 ${data.lng.toFixed(4)}`;
 
-  // 확률 바 (애니메이션)
+  // 확률 바
   setTimeout(() => {
     document.getElementById('safeBar').style.width   = `${safePct}%`;
     document.getElementById('dangerBar').style.width = `${dangerPct}%`;
@@ -441,7 +484,7 @@ function renderResult(data) {
   const grid = document.getElementById('featureGrid');
   grid.innerHTML = '';
   const f = data.features;
-  const entries = [
+  [
     ['잔여시간표시기수', f['잔여시간표시기수']],
     ['음향신호기수',     f['음향신호기수']],
     ['안전표지수',       f['안전표지수']],
@@ -450,8 +493,7 @@ function renderResult(data) {
     ['불법주차_원본건수',f['불법주차_원본건수']],
     ['CCTV대수',         f['CCTV대수']],
     ['도로폭',           f['도로폭']],
-  ];
-  entries.forEach(([key, val]) => {
+  ].forEach(([key, val]) => {
     const info = FEATURE_LABELS[key] || { label: key, unit: '' };
     grid.innerHTML += `
       <div class="feature-item">
@@ -463,13 +505,11 @@ function renderResult(data) {
   });
 
   document.getElementById('result').style.display = 'block';
-  document.getElementById('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.querySelector('.panel').scrollTo({ top: 9999, behavior: 'smooth' });
 }
 
-// Enter 키로 예측
-document.addEventListener('keydown', e => {
-  if (e.key === 'Enter') predict();
-});
+// Enter 키
+document.addEventListener('keydown', e => { if (e.key === 'Enter') predict(); });
 </script>
 </body>
 </html>
