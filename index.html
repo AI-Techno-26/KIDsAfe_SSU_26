@@ -40,19 +40,51 @@
 
   /* ── 2단 레이아웃 ── */
   .layout {
-    display: grid;
-    grid-template-columns: 420px 1fr;
+    display: flex;
     height: calc(100vh - 72px);
+    overflow: hidden;
   }
+  .panel {
+    width: 420px;
+    min-width: 280px;
+    max-width: 680px;
+    flex-shrink: 0;
+  }
+
+  /* ── 드래그 디바이더 ── */
+  #divider {
+    width: 6px;
+    background: var(--border);
+    cursor: col-resize;
+    flex-shrink: 0;
+    position: relative;
+    transition: background 0.15s;
+    z-index: 10;
+  }
+  #divider:hover, #divider.dragging { background: var(--green-light); }
+  #divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 2px;
+    height: 40px;
+    background: rgba(0,0,0,0.15);
+    border-radius: 2px;
+  }
+  #map-wrapper { flex: 1; overflow: hidden; }
   @media (max-width: 800px) {
-    .layout { grid-template-columns: 1fr; height: auto; }
-    #map-wrapper { height: 0; overflow: hidden; transition: height 0.35s ease; }
-    #map-wrapper.open { height: 320px; }
+    .layout { flex-direction: column; height: auto; }
+    .panel  { width: 100% !important; min-width: unset; max-width: unset; }
+    #divider { display: none; }
+    #map-wrapper { height: 0 !important; overflow: hidden; transition: height 0.35s ease; flex: none; }
+    #map-wrapper.open { height: 320px !important; }
     #map { height: 320px; }
   }
   @media (min-width: 801px) {
     #map-toggle-btn { display: none !important; }
-    #map-wrapper { height: 100% !important; overflow: visible !important; }
+    #map-wrapper { flex: 1; overflow: hidden; }
   }
 
   /* 지도 안내 배너 — 토글 버튼 포함 */
@@ -217,7 +249,7 @@
     <!-- 지도 안내 + 모바일 토글 버튼 -->
     <div class="map-tip" style="background:var(--green-pale);border-left:4px solid var(--green-mid);border-radius:8px;padding:10px 14px;color:var(--green-dark);">
       <span class="map-tip-text">
-        지도를 <strong>클릭</strong>하면 해당 위치의 좌표가 자동 입력됩니다.
+        🗺 지도를 <strong>클릭</strong>하면 해당 위치의 좌표가 자동 입력됩니다.
       </span>
       <button id="map-toggle-btn" onclick="toggleMap()">
         <span>지도 보기</span>
@@ -239,9 +271,9 @@
         </div>
       </div>
 
-      <!-- 예시 버튼 -->
+      <!-- 샘플 버튼 -->
       <div class="sample-btns">
-        <span>예시</span>
+        <span>샘플</span>
         <button class="sample-btn" onclick="moveTo(37.5665,126.9780,'서울시청')">서울시청</button>
         <button class="sample-btn" onclick="moveTo(37.5172,127.0473,'강남 삼성동')">강남 삼성동</button>
         <button class="sample-btn" onclick="moveTo(37.6176,126.9227,'은평 응암동')">은평 응암동</button>
@@ -283,6 +315,9 @@
     </div>
 
   </div><!-- /panel -->
+
+  <!-- ── 드래그 디바이더 ── -->
+  <div id="divider" title="드래그하여 너비 조절"></div>
 
   <!-- ── 오른쪽 지도 ── -->
   <div id="map-wrapper">
@@ -379,6 +414,65 @@ function moveTo(lat, lng, name) {
   map.setView([lat, lng], 15);
   marker.bindPopup(`<b>${name}</b>`).openPopup();
 }
+
+// ── 드래그 디바이더 ──────────────────────────────────────────────────────────
+(function() {
+  const divider = document.getElementById('divider');
+  const panel   = document.querySelector('.panel');
+  let isDragging = false;
+  let startX, startW;
+
+  divider.addEventListener('mousedown', e => {
+    isDragging = true;
+    startX = e.clientX;
+    startW = panel.offsetWidth;
+    divider.classList.add('dragging');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    const dx      = e.clientX - startX;
+    const newWidth = Math.min(Math.max(startW + dx, 280), 680);
+    panel.style.width = newWidth + 'px';
+    map.invalidateSize();
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!isDragging) return;
+    isDragging = false;
+    divider.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    map.invalidateSize();
+  });
+
+  // 터치 지원 (태블릿)
+  divider.addEventListener('touchstart', e => {
+    isDragging = true;
+    startX = e.touches[0].clientX;
+    startW = panel.offsetWidth;
+    divider.classList.add('dragging');
+    e.preventDefault();
+  }, { passive: false });
+
+  document.addEventListener('touchmove', e => {
+    if (!isDragging) return;
+    const dx      = e.touches[0].clientX - startX;
+    const newWidth = Math.min(Math.max(startW + dx, 280), 680);
+    panel.style.width = newWidth + 'px';
+    map.invalidateSize();
+  }, { passive: false });
+
+  document.addEventListener('touchend', () => {
+    if (!isDragging) return;
+    isDragging = false;
+    divider.classList.remove('dragging');
+    map.invalidateSize();
+  });
+})();
 
 // ── 모바일 지도 토글 ──────────────────────────────────────────────────────────
 function toggleMap() {
