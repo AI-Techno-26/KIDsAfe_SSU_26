@@ -13,227 +13,99 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css"/>
 <style>
   :root {
-    --green-dark:  #1b5e20;
-    --green-mid:   #2e7d32;
-    --green-light: #43a047;
-    --green-pale:  #e8f5e9;
-    --red:         #c62828;
-    --red-pale:    #ffebee;
-    --text:        #1a1a1a;
-    --gray:        #666;
-    --border:      #ddd;
-    --bg:          #f9fafb;
+    --green-dark:#1b5e20; --green-mid:#2e7d32; --green-light:#43a047; --green-pale:#e8f5e9;
+    --amber:#f39c12; --amber-pale:#fff8e1; --red:#c62828; --red-pale:#ffebee;
+    --text:#1a1a1a; --gray:#666; --border:#ddd; --bg:#f9fafb;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Noto Sans KR',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
 
-  header {
-    background: var(--green-dark); color: #fff;
-    padding: 16px 32px; display: flex; align-items: center; gap: 16px;
-    position: sticky; top: 0; z-index: 1000;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  }
-  .logo-pin {
-    width: 40px; height: 40px; background: var(--green-light);
-    border-radius: 50% 50% 50% 0; transform: rotate(-45deg);
-    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-  }
-  .logo-pin::after { content: '📍'; transform: rotate(45deg); font-size: 16px; }
-  .logo-text .brand { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 3px; }
-  .logo-text .brand span { color: #a5d6a7; }
-  .logo-text .sub { font-size: 11px; opacity: 0.75; letter-spacing: 1px; }
+  header { background:var(--green-dark); color:#fff; padding:16px 32px; display:flex; align-items:center; gap:16px;
+           position:sticky; top:0; z-index:1000; box-shadow:0 2px 8px rgba(0,0,0,0.2); }
+  .logo-pin { width:40px; height:40px; background:var(--green-light); border-radius:50% 50% 50% 0;
+              transform:rotate(-45deg); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .logo-pin::after { content:'📍'; transform:rotate(45deg); font-size:16px; }
+  .logo-text .brand { font-family:'Bebas Neue',sans-serif; font-size:26px; letter-spacing:3px; }
+  .logo-text .brand span { color:#a5d6a7; }
+  .logo-text .sub { font-size:11px; opacity:0.75; letter-spacing:1px; }
 
-  /* ── 2단 레이아웃 ── */
-  .layout {
-    display: flex;
-    height: calc(100vh - 72px);
-    overflow: hidden;
-  }
-  .panel {
-    width: 420px;
-    min-width: 280px;
-    max-width: 680px;
-    flex-shrink: 0;
-  }
+  .layout { display:flex; height:calc(100vh - 72px); overflow:hidden; }
+  .panel { width:420px; min-width:280px; max-width:680px; flex-shrink:0; overflow-y:auto;
+           padding:20px; display:flex; flex-direction:column; gap:16px; background:var(--bg); border-right:1px solid var(--border); }
 
-  /* ── 드래그 디바이더 ── */
-  #divider {
-    width: 6px;
-    background: var(--border);
-    cursor: col-resize;
-    flex-shrink: 0;
-    position: relative;
-    transition: background 0.15s;
-    z-index: 10;
-  }
-  #divider:hover, #divider.dragging { background: var(--green-light); }
-  #divider::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 2px;
-    height: 40px;
-    background: rgba(0,0,0,0.15);
-    border-radius: 2px;
-  }
-  #map-wrapper { flex: 1; overflow: hidden; }
-  @media (max-width: 800px) {
-    .layout { flex-direction: column; height: auto; }
-    .panel  { width: 100% !important; min-width: unset; max-width: unset; }
-    #divider { display: none; }
-    #map-wrapper { height: 0 !important; overflow: hidden; transition: height 0.35s ease; flex: none; }
-    #map-wrapper.open { height: 320px !important; }
-    #map { height: 320px; }
-  }
-  @media (min-width: 801px) {
-    #map-toggle-btn { display: none !important; }
-    #map-wrapper { flex: 1; overflow: hidden; }
-  }
+  #divider { width:6px; background:var(--border); cursor:col-resize; flex-shrink:0; position:relative; transition:background 0.15s; z-index:10; }
+  #divider:hover, #divider.dragging { background:var(--green-light); }
+  #divider::after { content:''; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:2px; height:40px; background:rgba(0,0,0,0.15); border-radius:2px; }
+  #map-wrapper { flex:1; overflow:hidden; }
+  #map { width:100%; height:100%; cursor:crosshair; }
 
-  /* 지도 안내 배너 — 토글 버튼 포함 */
-  .map-tip {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
+  @media (max-width:800px) {
+    .layout { flex-direction:column; height:auto; }
+    .panel { width:100% !important; min-width:unset; max-width:unset; }
+    #divider { display:none; }
+    #map-wrapper { height:0 !important; overflow:hidden; transition:height 0.35s ease; flex:none; }
+    #map-wrapper.open { height:320px !important; }
+    #map { height:320px; }
   }
-  .map-tip-text { flex: 1; line-height: 1.5; font-size: 12px; }
-  #map-toggle-btn {
-    flex-shrink: 0;
-    display: flex; align-items: center; gap: 5px;
-    padding: 6px 12px;
-    background: var(--green-mid); color: #fff;
-    border: none; border-radius: 20px;
-    font-size: 12px; font-weight: 600;
-    font-family: 'Noto Sans KR', sans-serif;
-    cursor: pointer; transition: background 0.15s; white-space: nowrap;
-  }
-  #map-toggle-btn:hover { background: var(--green-dark); }
-  #map-toggle-btn .toggle-icon { font-size: 13px; transition: transform 0.3s; display: inline-block; }
-  #map-toggle-btn.open .toggle-icon { transform: rotate(180deg); }
+  @media (min-width:801px) { #map-toggle-btn { display:none !important; } }
 
-  /* ── 왼쪽 패널 ── */
-  .panel {
-    overflow-y: auto;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    background: var(--bg);
-    border-right: 1px solid var(--border);
-  }
+  .card { background:#fff; border-radius:14px; padding:20px 22px; box-shadow:0 2px 10px rgba(0,0,0,0.07); }
+  .card h2 { font-size:13px; font-weight:700; color:var(--green-dark); margin-bottom:14px; display:flex; align-items:center; gap:6px; }
 
-  /* ── 지도 ── */
-  #map {
-    width: 100%;
-    height: 100%;
-    cursor: crosshair;
-  }
+  .map-tip { display:flex; align-items:center; justify-content:space-between; gap:10px;
+             background:var(--green-pale); border-left:4px solid var(--green-mid); border-radius:8px; padding:10px 14px; color:var(--green-dark); }
+  .map-tip-text { flex:1; line-height:1.5; font-size:12px; }
+  #map-toggle-btn { flex-shrink:0; display:flex; align-items:center; gap:5px; padding:6px 12px; background:var(--green-mid); color:#fff;
+                    border:none; border-radius:20px; font-size:12px; font-weight:600; font-family:'Noto Sans KR',sans-serif; cursor:pointer; white-space:nowrap; }
+  #map-toggle-btn .toggle-icon { font-size:13px; transition:transform 0.3s; display:inline-block; }
+  #map-toggle-btn.open .toggle-icon { transform:rotate(180deg); }
 
-  /* ── 카드 ── */
-  .card {
-    background: #fff; border-radius: 14px;
-    padding: 20px 22px; box-shadow: 0 2px 10px rgba(0,0,0,0.07);
-  }
-  .card h2 {
-    font-size: 13px; font-weight: 700; color: var(--green-dark);
-    margin-bottom: 14px; display: flex; align-items: center; gap: 6px;
-  }
+  .coord-display { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+  .coord-box { background:var(--bg); border:1.5px solid var(--border); border-radius:10px; padding:10px 12px; }
+  .coord-box label { font-size:10px; font-weight:600; color:var(--gray); display:block; margin-bottom:3px; }
+  .coord-box .val { font-size:15px; font-weight:700; color:var(--green-dark); font-family:monospace; }
 
-  /* 지도 안내 배너 */
-  .map-tip {
-    background: var(--green-pale);
-    border-left: 4px solid var(--green-mid);
-    border-radius: 8px;
-    padding: 10px 14px;
-    font-size: 12px;
-    color: var(--green-dark);
-    line-height: 1.5;
-  }
+  .sample-btns { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
+  .sample-btns > span { font-size:11px; color:var(--gray); align-self:center; }
+  .sample-btn { padding:4px 10px; border:1.5px solid var(--green-light); border-radius:20px; background:#fff; color:var(--green-mid);
+                font-size:11px; font-family:'Noto Sans KR',sans-serif; cursor:pointer; transition:all 0.15s; }
+  .sample-btn:hover { background:var(--green-pale); }
 
-  /* 좌표 표시 */
-  .coord-display {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 14px;
-  }
-  .coord-box {
-    background: var(--bg);
-    border: 1.5px solid var(--border);
-    border-radius: 10px;
-    padding: 10px 12px;
-  }
-  .coord-box label { font-size: 10px; font-weight: 600; color: var(--gray); display: block; margin-bottom: 3px; }
-  .coord-box .val { font-size: 15px; font-weight: 700; color: var(--green-dark); font-family: monospace; }
+  #predictBtn { width:100%; padding:13px; background:var(--green-mid); color:#fff; border:none; border-radius:12px;
+                font-size:15px; font-weight:700; font-family:'Noto Sans KR',sans-serif; cursor:pointer; letter-spacing:1px; transition:background 0.2s; }
+  #predictBtn:hover { background:var(--green-dark); }
+  #predictBtn:disabled { background:#aaa; cursor:not-allowed; }
 
-  /* 샘플 버튼 */
-  .sample-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
-  .sample-btns > span { font-size: 11px; color: var(--gray); align-self: center; }
-  .sample-btn {
-    padding: 4px 10px;
-    border: 1.5px solid var(--green-light);
-    border-radius: 20px; background: #fff; color: var(--green-mid);
-    font-size: 11px; font-family: 'Noto Sans KR', sans-serif;
-    cursor: pointer; transition: all 0.15s;
-  }
-  .sample-btn:hover { background: var(--green-pale); }
+  .risk-banner { border-radius:10px; padding:16px 18px; display:flex; align-items:center; gap:14px; margin-bottom:16px; }
+  .risk-banner.safe   { background:var(--green-pale); border-left:5px solid var(--green-mid); }
+  .risk-banner.caution{ background:var(--amber-pale); border-left:5px solid var(--amber); }
+  .risk-banner.danger { background:var(--red-pale);   border-left:5px solid var(--red); }
+  .risk-icon { font-size:32px; line-height:1; }
+  .risk-info .grade { font-family:'Bebas Neue',sans-serif; font-size:26px; letter-spacing:2px; line-height:1; }
+  .risk-banner.safe    .grade { color:var(--green-dark); }
+  .risk-banner.caution .grade { color:#b8860b; }
+  .risk-banner.danger  .grade { color:var(--red); }
+  .risk-info .coord { font-size:11px; color:var(--gray); margin-top:3px; }
 
-  /* 예측 버튼 */
-  #predictBtn {
-    width: 100%; padding: 13px;
-    background: var(--green-mid); color: #fff; border: none;
-    border-radius: 12px; font-size: 15px; font-weight: 700;
-    font-family: 'Noto Sans KR', sans-serif; cursor: pointer;
-    transition: background 0.2s, transform 0.1s; letter-spacing: 1px;
-  }
-  #predictBtn:hover  { background: var(--green-dark); }
-  #predictBtn:active { transform: scale(0.98); }
-  #predictBtn:disabled { background: #aaa; cursor: not-allowed; }
+  .prob-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+  .prob-label { font-size:12px; width:54px; flex-shrink:0; }
+  .prob-track { flex:1; height:9px; background:#eee; border-radius:99px; overflow:hidden; }
+  .prob-fill { height:100%; border-radius:99px; transition:width 0.6s ease; }
+  .prob-fill.safe{background:var(--green-light);} .prob-fill.caution{background:var(--amber);} .prob-fill.danger{background:var(--red);}
+  .prob-pct { font-size:12px; font-weight:600; width:38px; text-align:right; }
 
-  /* 결과 */
-  .risk-banner {
-    border-radius: 10px; padding: 16px 18px;
-    display: flex; align-items: center; gap: 14px; margin-bottom: 16px;
-  }
-  .risk-banner.safe   { background: var(--green-pale); border-left: 5px solid var(--green-mid); }
-  .risk-banner.danger { background: var(--red-pale);   border-left: 5px solid var(--red); }
-  .risk-icon { font-size: 32px; line-height: 1; }
-  .risk-info .grade { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 2px; line-height: 1; }
-  .risk-banner.safe   .grade { color: var(--green-dark); }
-  .risk-banner.danger .grade { color: var(--red); }
-  .risk-info .coord { font-size: 11px; color: var(--gray); margin-top: 3px; }
+  .feature-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .feature-item { background:var(--bg); border-radius:8px; padding:10px 12px; }
+  .feature-item .f-label { font-size:10px; color:var(--gray); margin-bottom:3px; }
+  .feature-item .f-value { font-size:16px; font-weight:700; color:var(--green-dark); }
+  .feature-item .f-unit { font-size:10px; color:var(--gray); margin-left:2px; }
 
-  .prob-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-  .prob-label { font-size: 12px; width: 46px; flex-shrink: 0; }
-  .prob-track { flex: 1; height: 9px; background: #eee; border-radius: 99px; overflow: hidden; }
-  .prob-fill { height: 100%; border-radius: 99px; transition: width 0.6s ease; }
-  .prob-fill.safe   { background: var(--green-light); }
-  .prob-fill.danger { background: var(--red); }
-  .prob-pct { font-size: 12px; font-weight: 600; width: 38px; text-align: right; }
-
-  .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .feature-item { background: var(--bg); border-radius: 8px; padding: 10px 12px; }
-  .feature-item .f-label { font-size: 10px; color: var(--gray); margin-bottom: 3px; }
-  .feature-item .f-value { font-size: 16px; font-weight: 700; color: var(--green-dark); }
-  .feature-item .f-unit  { font-size: 10px; color: var(--gray); margin-left: 2px; }
-
-  .error-msg {
-    background: #fff3e0; border-left: 4px solid #ff9800;
-    border-radius: 8px; padding: 10px 14px;
-    font-size: 12px; color: #e65100; display: none; margin-top: 10px;
-  }
-  .spinner {
-    display: inline-block; width: 14px; height: 14px;
-    border: 2px solid #fff; border-top-color: transparent;
-    border-radius: 50%; animation: spin 0.6s linear infinite;
-    margin-right: 6px; vertical-align: middle;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  #result { display: none; }
+  .error-msg { background:#fff3e0; border-left:4px solid #ff9800; border-radius:8px; padding:10px 14px;
+               font-size:12px; color:#e65100; display:none; margin-top:10px; }
+  .spinner { display:inline-block; width:14px; height:14px; border:2px solid #fff; border-top-color:transparent;
+             border-radius:50%; animation:spin 0.6s linear infinite; margin-right:6px; vertical-align:middle; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  #result { display:none; }
 </style>
 </head>
 <body>
@@ -242,58 +114,37 @@
   <div class="logo-pin"></div>
   <div class="logo-text">
     <div class="brand">KID<span>s</span>Afe</div>
-    <div class="sub">어린이보호구역 위험도 예측 AI</div>
+    <div class="sub">전국 어린이보호구역 위험도 예측 AI</div>
   </div>
 </header>
 
 <div class="layout">
-
-  <!-- ── 왼쪽 패널 ── -->
   <div class="panel">
-
-    <!-- 지도 안내 + 모바일 토글 버튼 -->
-    <div class="map-tip" style="background:var(--green-pale);border-left:4px solid var(--green-mid);border-radius:8px;padding:10px 14px;color:var(--green-dark);">
-      <span class="map-tip-text">
-        지도를 <strong>클릭</strong>하면 해당 위치의 좌표가 자동 입력됩니다.
-      </span>
-      <button id="map-toggle-btn" onclick="toggleMap()">
-        <span>지도 보기</span>
-        <span class="toggle-icon">▼</span>
-      </button>
+    <div class="map-tip">
+      <span class="map-tip-text">지도를 <strong>클릭</strong>하면 해당 위치의 좌표가 자동 입력됩니다.</span>
+      <button id="map-toggle-btn" onclick="toggleMap()"><span>지도 보기</span><span class="toggle-icon">▼</span></button>
     </div>
 
-    <!-- 좌표 표시 -->
     <div class="card">
       <h2>📍 선택된 위치</h2>
       <div class="coord-display">
-        <div class="coord-box">
-          <label>위도 (Latitude)</label>
-          <div class="val" id="latVal">37.5665</div>
-        </div>
-        <div class="coord-box">
-          <label>경도 (Longitude)</label>
-          <div class="val" id="lngVal">126.9780</div>
-        </div>
+        <div class="coord-box"><label>위도 (Latitude)</label><div class="val" id="latVal">37.5665</div></div>
+        <div class="coord-box"><label>경도 (Longitude)</label><div class="val" id="lngVal">126.9780</div></div>
       </div>
-
-      <!-- 샘플 버튼 -->
       <div class="sample-btns">
         <span>샘플</span>
-        <button class="sample-btn" onclick="moveTo(37.5665,126.9780,'서울시청')">서울시청</button>
-        <button class="sample-btn" onclick="moveTo(37.5172,127.0473,'강남 삼성동')">강남 삼성동</button>
-        <button class="sample-btn" onclick="moveTo(37.6176,126.9227,'은평 응암동')">은평 응암동</button>
-        <button class="sample-btn" onclick="moveTo(37.6388,127.0278,'노원 중계동')">노원 중계동</button>
-        <button class="sample-btn" onclick="moveTo(37.4836,126.9299,'동작 노량진')">동작 노량진</button>
+        <button class="sample-btn" onclick="moveTo(37.5665,126.9780,'서울시청')">서울</button>
+        <button class="sample-btn" onclick="moveTo(35.1796,129.0756,'부산시청')">부산</button>
+        <button class="sample-btn" onclick="moveTo(35.8714,128.6014,'대구시청')">대구</button>
+        <button class="sample-btn" onclick="moveTo(37.4563,126.7052,'인천시청')">인천</button>
+        <button class="sample-btn" onclick="moveTo(35.1595,126.8526,'광주시청')">광주</button>
       </div>
-
       <button id="predictBtn" onclick="predict()">위험도 예측하기</button>
       <div class="error-msg" id="errorMsg"></div>
     </div>
 
-    <!-- 결과 카드 -->
     <div class="card" id="result">
       <h2>🔍 예측 결과</h2>
-
       <div class="risk-banner" id="riskBanner">
         <div class="risk-icon" id="riskIcon"></div>
         <div class="risk-info">
@@ -301,34 +152,18 @@
           <div class="coord" id="riskCoord"></div>
         </div>
       </div>
-
       <div style="margin-bottom:16px">
-        <div class="prob-row">
-          <span class="prob-label">🟢 안전</span>
-          <div class="prob-track"><div class="prob-fill safe" id="safeBar" style="width:0%"></div></div>
-          <span class="prob-pct" id="safePct">-</span>
-        </div>
-        <div class="prob-row">
-          <span class="prob-label">🔴 위험</span>
-          <div class="prob-track"><div class="prob-fill danger" id="dangerBar" style="width:0%"></div></div>
-          <span class="prob-pct" id="dangerPct">-</span>
-        </div>
+        <div class="prob-row"><span class="prob-label">🟢 안전</span><div class="prob-track"><div class="prob-fill safe" id="safeBar" style="width:0%"></div></div><span class="prob-pct" id="safePct">-</span></div>
+        <div class="prob-row"><span class="prob-label">🟡 주의</span><div class="prob-track"><div class="prob-fill caution" id="cautionBar" style="width:0%"></div></div><span class="prob-pct" id="cautionPct">-</span></div>
+        <div class="prob-row"><span class="prob-label">🔴 위험</span><div class="prob-track"><div class="prob-fill danger" id="dangerBar" style="width:0%"></div></div><span class="prob-pct" id="dangerPct">-</span></div>
       </div>
-
-      <h2>📊 반경 500m 내 시설물</h2>
+      <h2>📊 반경 500m 내 현황</h2>
       <div class="feature-grid" id="featureGrid"></div>
     </div>
-
-  </div><!-- /panel -->
-
-  <!-- ── 드래그 디바이더 ── -->
-  <div id="divider" title="드래그하여 너비 조절"></div>
-
-  <!-- ── 오른쪽 지도 ── -->
-  <div id="map-wrapper">
-    <div id="map"></div>
   </div>
 
+  <div id="divider" title="드래그하여 너비 조절"></div>
+  <div id="map-wrapper"><div id="map"></div></div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -338,178 +173,84 @@ const API_URL = 'https://kidsafe-ssu-26.onrender.com';
 // const API_URL = 'http://localhost:8000';
 
 const FEATURE_LABELS = {
-  '잔여시간표시기수' : { label: '잔여시간표시기', unit: '개' },
-  '음향신호기수'    : { label: '음향신호기',      unit: '개' },
-  '안전표지수'      : { label: '안전표지',        unit: '개' },
-  '신호등수'        : { label: '신호등',          unit: '개' },
-  '교차로수'        : { label: '교차로',          unit: '개' },
-  '불법주차_원본건수': { label: '불법주차',        unit: '건' },
-  'CCTV대수'        : { label: 'CCTV',            unit: '대' },
-  '도로폭'          : { label: '도로폭',          unit: 'm'  },
+  '과속방지턱수':{label:'과속방지턱',unit:'개'}, '도로안내표지수':{label:'도로안내표지',unit:'개'},
+  '무인단속카메라수':{label:'무인단속카메라',unit:'개'}, '보행자우선도로수':{label:'보행자우선도로',unit:'개'},
+  '신호등수':{label:'신호등',unit:'개'}, '일방통행도로수':{label:'일방통행도로',unit:'개'},
+  '지역특화거리수':{label:'지역특화거리',unit:'개'}, '옐로카펫수':{label:'옐로카펫',unit:'개'},
+  '주차장수':{label:'주차장',unit:'개'}, '버스정류장수':{label:'버스정류장',unit:'개'},
 };
+const GRADE = {0:{name:'안전 구역',cls:'safe',icon:'🟢',color:'#2e7d32'},
+               1:{name:'주의 구역',cls:'caution',icon:'🟡',color:'#f39c12'},
+               2:{name:'위험 구역',cls:'danger',icon:'🔴',color:'#c62828'}};
 
-// ── 지도 초기화 (서울 중심) ───────────────────────────────────────────────────
-const map = L.map('map', { zoomControl: true }).setView([37.5665, 126.9780], 13);
-
+// ── 지도 초기화 (전국 중심) ───────────────────────────────────────────────────
+const map = L.map('map', { zoomControl:true }).setView([36.5, 127.8], 7);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© <a href="https://www.openstreetmap.org/">OpenStreetMap</a>',
-  maxZoom: 19,
+  attribution:'© <a href="https://www.openstreetmap.org/">OpenStreetMap</a>', maxZoom:19,
 }).addTo(map);
 
-// 서울 경계 표시 (반투명 사각형)
-const seoulBounds = [[37.2, 126.5], [37.8, 127.3]];
-L.rectangle(seoulBounds, {
-  color: '#2e7d32', weight: 2,
-  fillColor: '#43a047', fillOpacity: 0.04,
-  dashArray: '6 4',
-}).addTo(map).bindTooltip('서울시 분석 범위', { permanent: false });
-
-// 마커 (커스텀 핀)
-const pinIcon = L.divIcon({
-  html: `<div style="
-    width:32px; height:32px;
-    background:#2e7d32;
-    border-radius:50% 50% 50% 0;
-    transform:rotate(-45deg);
-    border:3px solid #fff;
-    box-shadow:0 2px 8px rgba(0,0,0,0.3);
-  "></div>`,
-  iconSize: [32, 32],
-  iconAnchor: [16, 32],
-  className: '',
+// 선택 마커
+const pinIcon = c => L.divIcon({
+  html:`<div style="width:32px;height:32px;background:${c};border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3)"></div>`,
+  iconSize:[32,32], iconAnchor:[16,32], className:'',
 });
+let marker = L.marker([37.5665,126.9780], { icon:pinIcon('#2e7d32'), draggable:true }).addTo(map);
+let circle = L.circle([37.5665,126.9780], { radius:500, color:'#2e7d32', weight:1.5, fillColor:'#43a047', fillOpacity:0.08 }).addTo(map);
 
-let marker = L.marker([37.5665, 126.9780], { icon: pinIcon, draggable: true }).addTo(map);
+let currentLat = 37.5665, currentLng = 126.9780;
 
-const zoneIcon = L.divIcon({
-  html: `<div style="
-    width:12px; height:12px;
-    background:#ff9800;
-    border:2px solid #fff;
-    border-radius:50%;
-    box-shadow:0 1px 4px rgba(0,0,0,0.4);
-  "></div>`,
-  iconSize: [12, 12],
-  iconAnchor: [6, 6],
-  className: '',
-});
-
+// ── 보호구역 마커 클러스터 로드 ──────────────────────────────────────────────
 async function loadZones() {
   try {
     const res  = await fetch(`${API_URL}/zones`);
     const data = await res.json();
-
-    // 클러스터 그룹 생성
     const clusterGroup = L.markerClusterGroup({
       maxClusterRadius: 90,
       disableClusteringAtZoom: 14,
       iconCreateFunction: cluster => {
         const count = cluster.getChildCount();
         return L.divIcon({
-          html: `<div style="
-            width:34px; height:34px;
-            background:#ff9800;
-            border:3px solid #fff;
-            border-radius:50%;
-            display:flex; align-items:center; justify-content:center;
-            font-size:12px; font-weight:700; color:#fff;
-            box-shadow:0 2px 6px rgba(0,0,0,0.3);
-          ">${count}</div>`,
-          iconSize: [34, 34],
-          iconAnchor: [17, 17],
-          className: '',
+          html:`<div style="width:34px;height:34px;background:#ff9800;border:3px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;box-shadow:0 2px 6px rgba(0,0,0,0.3)">${count}</div>`,
+          iconSize:[34,34], iconAnchor:[17,17], className:'',
         });
       },
     });
-
-    // 개별 마커 (줌인 시 표시)
     const zoneIcon = L.divIcon({
-      html: `<div style="
-        width:10px; height:10px;
-        background:#ff9800;
-        border:2px solid #fff;
-        border-radius:50%;
-        box-shadow:0 1px 4px rgba(0,0,0,0.4);
-      "></div>`,
-      iconSize: [10, 10],
-      iconAnchor: [5, 5],
-      className: '',
+      html:`<div style="width:10px;height:10px;background:#ff9800;border:2px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.4)"></div>`,
+      iconSize:[10,10], iconAnchor:[5,5], className:'',
     });
-
     data.zones.forEach(z => {
-      L.marker([z.lat, z.lng], { icon: zoneIcon })
-        .bindPopup(`
-        <div style="
-          font-family:'Noto Sans KR',sans-serif;
-          padding:10px 14px;
-          min-width:140px;
-          text-align:center;
-        ">
-          <div style="
-            font-size:11px;
-            color:#ff9800;
-            font-weight:600;
-            letter-spacing:1px;
-            margin-bottom:6px;
-          ">${z.type}</div>
-          <div style="
-            font-size:15px;
-            font-weight:700;
-            color:#1a1a1a;
-            line-height:1.3;
-          ">🏫 ${z.name}</div>
-        </div>
-      `)
+      L.marker([z.lat, z.lng], { icon:zoneIcon })
+        .bindPopup(`<div style="font-family:'Noto Sans KR',sans-serif;padding:10px 14px;min-width:140px;text-align:center">
+          <div style="font-size:11px;color:#ff9800;font-weight:600;letter-spacing:1px;margin-bottom:6px">${z.type||'어린이보호구역'}</div>
+          <div style="font-size:15px;font-weight:700;color:#1a1a1a;line-height:1.3">🏫 ${z.name||''}</div>
+        </div>`)
         .addTo(clusterGroup);
     });
-
     clusterGroup.addTo(map);
-    console.log(`교통사고 다발구역 ${data.zones.length}개 로드 완료`);
+    console.log(`보호구역 ${data.zones.length}개 로드 완료`);
   } catch (e) {
     console.warn('zones 로드 실패:', e.message);
   }
 }
-
 loadZones();
-
-// 반경 500m 원
-let circle = L.circle([37.5665, 126.9780], {
-  radius: 500,
-  color: '#2e7d32', weight: 1.5,
-  fillColor: '#43a047', fillOpacity: 0.08,
-}).addTo(map);
-
-// 현재 선택 좌표
-let currentLat = 37.5665;
-let currentLng = 126.9780;
 
 function updatePosition(lat, lng) {
   currentLat = parseFloat(lat.toFixed(4));
   currentLng = parseFloat(lng.toFixed(4));
-
   document.getElementById('latVal').textContent = currentLat;
   document.getElementById('lngVal').textContent = currentLng;
-
   marker.setLatLng([lat, lng]);
   circle.setLatLng([lat, lng]);
   document.getElementById('result').style.display = 'none';
 }
 
-// 지도 클릭 → 좌표 선택
-map.on('click', e => {
-  updatePosition(e.latlng.lat, e.latlng.lng);
-});
+map.on('click', e => updatePosition(e.latlng.lat, e.latlng.lng));
+marker.on('dragend', e => { const p = e.target.getLatLng(); updatePosition(p.lat, p.lng); });
 
-// 마커 드래그
-marker.on('dragend', e => {
-  const pos = e.target.getLatLng();
-  updatePosition(pos.lat, pos.lng);
-});
-
-// 샘플 버튼
 function moveTo(lat, lng, name) {
   updatePosition(lat, lng);
-  map.setView([lat, lng], 15);
+  map.setView([lat, lng], 14);
   marker.bindPopup(`<b>${name}</b>`).openPopup();
 }
 
@@ -517,58 +258,28 @@ function moveTo(lat, lng, name) {
 (function() {
   const divider = document.getElementById('divider');
   const panel   = document.querySelector('.panel');
-  let isDragging = false;
-  let startX, startW;
-
+  let isDragging = false, startX, startW;
   divider.addEventListener('mousedown', e => {
-    isDragging = true;
-    startX = e.clientX;
-    startW = panel.offsetWidth;
-    divider.classList.add('dragging');
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-    e.preventDefault();
+    isDragging=true; startX=e.clientX; startW=panel.offsetWidth;
+    divider.classList.add('dragging'); document.body.style.cursor='col-resize'; document.body.style.userSelect='none'; e.preventDefault();
   });
-
   document.addEventListener('mousemove', e => {
-    if (!isDragging) return;
-    const dx      = e.clientX - startX;
-    const newWidth = Math.min(Math.max(startW + dx, 280), 680);
-    panel.style.width = newWidth + 'px';
-    map.invalidateSize();
+    if(!isDragging) return;
+    panel.style.width = Math.min(Math.max(startW+(e.clientX-startX),280),680)+'px'; map.invalidateSize();
   });
-
   document.addEventListener('mouseup', () => {
-    if (!isDragging) return;
-    isDragging = false;
-    divider.classList.remove('dragging');
-    document.body.style.cursor = '';
-    document.body.style.userSelect = '';
-    map.invalidateSize();
+    if(!isDragging) return;
+    isDragging=false; divider.classList.remove('dragging'); document.body.style.cursor=''; document.body.style.userSelect=''; map.invalidateSize();
   });
-
-  // 터치 지원 (태블릿)
   divider.addEventListener('touchstart', e => {
-    isDragging = true;
-    startX = e.touches[0].clientX;
-    startW = panel.offsetWidth;
-    divider.classList.add('dragging');
-    e.preventDefault();
-  }, { passive: false });
-
+    isDragging=true; startX=e.touches[0].clientX; startW=panel.offsetWidth; divider.classList.add('dragging'); e.preventDefault();
+  }, { passive:false });
   document.addEventListener('touchmove', e => {
-    if (!isDragging) return;
-    const dx      = e.touches[0].clientX - startX;
-    const newWidth = Math.min(Math.max(startW + dx, 280), 680);
-    panel.style.width = newWidth + 'px';
-    map.invalidateSize();
-  }, { passive: false });
-
+    if(!isDragging) return;
+    panel.style.width = Math.min(Math.max(startW+(e.touches[0].clientX-startX),280),680)+'px'; map.invalidateSize(); e.preventDefault();
+  }, { passive:false });
   document.addEventListener('touchend', () => {
-    if (!isDragging) return;
-    isDragging = false;
-    divider.classList.remove('dragging');
-    map.invalidateSize();
+    if(!isDragging) return; isDragging=false; divider.classList.remove('dragging'); map.invalidateSize();
   });
 })();
 
@@ -579,11 +290,7 @@ function toggleMap() {
   const isOpen  = wrapper.classList.toggle('open');
   btn.classList.toggle('open', isOpen);
   btn.querySelector('span:first-child').textContent = isOpen ? '지도 닫기' : '지도 보기';
-
-  // 지도가 열릴 때 크기 재계산 (Leaflet 버그 방지)
-  if (isOpen) {
-    setTimeout(() => map.invalidateSize(), 350);
-  }
+  if (isOpen) setTimeout(() => { map.invalidateSize({animate:false}); map.setView([currentLat,currentLng],map.getZoom()); }, 400);
 }
 
 // ── 예측 ─────────────────────────────────────────────────────────────────────
@@ -591,116 +298,81 @@ async function predict() {
   const btn   = document.getElementById('predictBtn');
   const errEl = document.getElementById('errorMsg');
   errEl.style.display = 'none';
-
   if (!currentLat || !currentLng) {
     errEl.textContent = '지도에서 위치를 먼저 선택해주세요.';
-    errEl.style.display = 'block';
-    return;
+    errEl.style.display = 'block'; return;
   }
-
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>분석 중...';
   document.getElementById('result').style.display = 'none';
-
   try {
     const res = await fetch(`${API_URL}/predict`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lat: currentLat, lng: currentLng }),
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ lat:currentLat, lng:currentLng }),
     });
-
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.detail || '서버 오류가 발생했습니다.');
-    }
-
-    const data = await res.json();
-    renderResult(data);
-
+    if (!res.ok) { const err = await res.json(); throw new Error(err.detail || '서버 오류가 발생했습니다.'); }
+    renderResult(await res.json());
   } catch (e) {
-    errEl.textContent = `오류: ${e.message}`;
-    errEl.style.display = 'block';
+    errEl.textContent = `오류: ${e.message}`; errEl.style.display = 'block';
   } finally {
-    btn.disabled = false;
-    btn.innerHTML = '위험도 예측하기';
+    btn.disabled = false; btn.innerHTML = '위험도 예측하기';
   }
 }
 
 function renderResult(data) {
-  const isDanger = data.위험도등급 === 1;
-  const safePct  = Math.round(data.안전확률 * 100);
-  const dangerPct= Math.round(data.위험확률 * 100);
+  const g = GRADE[data.위험도등급];
+  const sp = Math.round(data.안전확률*100);
+  const cp = Math.round(data.주의확률*100);
+  const dp = Math.round(data.위험확률*100);
 
-  // 마커 색상 변경
-  const color = isDanger ? '#c62828' : '#2e7d32';
-  marker.setIcon(L.divIcon({
-    html: `<div style="
-      width:32px; height:32px; background:${color};
-      border-radius:50% 50% 50% 0; transform:rotate(-45deg);
-      border:3px solid #fff; box-shadow:0 2px 8px rgba(0,0,0,0.3);
-    "></div>`,
-    iconSize: [32, 32], iconAnchor: [16, 32], className: '',
-  }));
-  circle.setStyle({ color, fillColor: color });
-
-  // 마커 팝업
-  marker.bindPopup(`
-    <div style="font-family:'Noto Sans KR',sans-serif; text-align:center; padding:4px 8px">
-      <div style="font-size:20px">${isDanger ? '🔴' : '🟢'}</div>
-      <div style="font-weight:700; font-size:14px; margin-top:4px">
-        ${isDanger ? '위험 구역' : '안전 구역'}
-      </div>
-      <div style="font-size:11px; color:#666; margin-top:2px">
-        위험확률 ${dangerPct}%
-      </div>
-    </div>
-  `).openPopup();
+  // 마커/원 색상
+  marker.setIcon(pinIcon(g.color));
+  circle.setStyle({ color:g.color, fillColor:g.color });
+  marker.bindPopup(`<div style="font-family:'Noto Sans KR',sans-serif;text-align:center;padding:4px 8px">
+    <div style="font-size:20px">${g.icon}</div>
+    <div style="font-weight:700;font-size:14px;margin-top:4px">${g.name}</div>
+    <div style="font-size:11px;color:#666;margin-top:2px">위험확률 ${dp}%</div>
+  </div>`).openPopup();
 
   // 배너
   const banner = document.getElementById('riskBanner');
-  banner.className = `risk-banner ${isDanger ? 'danger' : 'safe'}`;
-  document.getElementById('riskIcon').textContent  = isDanger ? '🔴' : '🟢';
-  document.getElementById('riskGrade').textContent = isDanger ? '위험 구역' : '안전 구역';
-  document.getElementById('riskCoord').textContent =
-    `위도 ${data.lat.toFixed(4)}, 경도 ${data.lng.toFixed(4)}`;
+  banner.className = `risk-banner ${g.cls}`;
+  document.getElementById('riskIcon').textContent  = g.icon;
+  document.getElementById('riskGrade').textContent = g.name;
+  document.getElementById('riskCoord').textContent = `위도 ${data.lat.toFixed(4)}, 경도 ${data.lng.toFixed(4)}`;
 
-  // 확률 바
+  // 확률 바 (3단계)
   setTimeout(() => {
-    document.getElementById('safeBar').style.width   = `${safePct}%`;
-    document.getElementById('dangerBar').style.width = `${dangerPct}%`;
+    document.getElementById('safeBar').style.width    = `${sp}%`;
+    document.getElementById('cautionBar').style.width = `${cp}%`;
+    document.getElementById('dangerBar').style.width  = `${dp}%`;
   }, 50);
-  document.getElementById('safePct').textContent   = `${safePct}%`;
-  document.getElementById('dangerPct').textContent = `${dangerPct}%`;
+  document.getElementById('safePct').textContent    = `${sp}%`;
+  document.getElementById('cautionPct').textContent = `${cp}%`;
+  document.getElementById('dangerPct').textContent  = `${dp}%`;
 
-  // 피처 그리드
+  // 피처 그리드 (전국 8요인 + 통제변수)
   const grid = document.getElementById('featureGrid');
   grid.innerHTML = '';
   const f = data.features;
-  [
-    ['잔여시간표시기수', f['잔여시간표시기수']],
-    ['음향신호기수',     f['음향신호기수']],
-    ['안전표지수',       f['안전표지수']],
-    ['신호등수',         f['신호등수']],
-    ['교차로수',         f['교차로수']],
-    ['불법주차_원본건수',f['불법주차_원본건수']],
-    ['CCTV대수',         f['CCTV대수']],
-    ['도로폭',           f['도로폭']],
-  ].forEach(([key, val]) => {
-    const info = FEATURE_LABELS[key] || { label: key, unit: '' };
+  ['과속방지턱수','무인단속카메라수','신호등수','도로안내표지수',
+   '보행자우선도로수','일방통행도로수','지역특화거리수','옐로카펫수',
+   '주차장수','버스정류장수'].forEach(key => {
+    if (f[key] === undefined) return;
+    const info = FEATURE_LABELS[key] || { label:key, unit:'' };
     grid.innerHTML += `
       <div class="feature-item">
         <div class="f-label">${info.label}</div>
-        <div class="f-value">${typeof val === 'number' ? val.toLocaleString() : val}
+        <div class="f-value">${typeof f[key]==='number' ? f[key].toLocaleString() : f[key]}
           <span class="f-unit">${info.unit}</span>
         </div>
       </div>`;
   });
 
   document.getElementById('result').style.display = 'block';
-  document.querySelector('.panel').scrollTo({ top: 9999, behavior: 'smooth' });
+  document.querySelector('.panel').scrollTo({ top:9999, behavior:'smooth' });
 }
 
-// Enter 키
 document.addEventListener('keydown', e => { if (e.key === 'Enter') predict(); });
 </script>
 </body>
