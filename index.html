@@ -175,7 +175,7 @@ const API_URL = 'https://kidsafe-ssu-26.onrender.com';
 const FEATURE_LABELS = {
   '과속방지턱수':{label:'과속방지턱',unit:'개'}, '도로안내표지수':{label:'도로안내표지',unit:'개'},
   '무인단속카메라수':{label:'무인단속카메라',unit:'개'}, '보행자우선도로수':{label:'보행자우선도로',unit:'개'},
-  '신호등수':{label:'신호등',unit:'개'}, '일방통행도로수':{label:'일방통행도로',unit:'개'},
+  '일방통행도로수':{label:'일방통행도로',unit:'개'},
   '지역특화거리수':{label:'지역특화거리',unit:'개'}, '옐로카펫수':{label:'옐로카펫',unit:'개'},
   '주차장수':{label:'주차장',unit:'개'}, '버스정류장수':{label:'버스정류장',unit:'개'},
 };
@@ -355,7 +355,7 @@ function renderResult(data) {
   const grid = document.getElementById('featureGrid');
   grid.innerHTML = '';
   const f = data.features;
-  ['과속방지턱수','무인단속카메라수','신호등수','도로안내표지수',
+  ['과속방지턱수','무인단속카메라수','도로안내표지수',
    '보행자우선도로수','일방통행도로수','지역특화거리수','옐로카펫수',
    '주차장수','버스정류장수'].forEach(key => {
     if (f[key] === undefined) return;
