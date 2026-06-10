@@ -8,7 +8,8 @@
 🔗 **서비스 바로가기**: https://kidsafe-ssu-26.onrender.com/app
 
 <img width="250" height="250" alt="qrcode_360077965_e01eb64a0dcf9435260bd8e172168213" src="https://github.com/user-attachments/assets/e7dd4a97-daa1-4aee-910b-ab4ce5c73aa6" />
-<img width="550" height="250" alt="image" src="https://github.com/user-attachments/assets/851d2f2f-c63e-404b-b351-4755b90ddcdb" />
+<img width="550" height="250" alt="image" src="https://github.com/user-attachments/assets/c7693355-eac7-49cc-adde-306cfa5bee31" />
+
 
 ---
 
